@@ -550,11 +550,11 @@ class MyInterface:
             time.sleep(0.2)
 
         start_time = time.time()  # Record the start time
-        total_runtime = self.get_total_runtime() + 1 # Get total runtime
+        total_runtime = self.get_total_runtime()  # Get total runtime
 
         time_sec = 0
-        # Define a variable to keep track of the last time time_sec was updated
-        last_time_sec_update = start_time
+        next_record_time = 0.5  # Start recording at 0.5 seconds
+        last_data_record_time = start_time  # Track when we last recorded data
 
         countdown_time_update = start_time
 
@@ -566,8 +566,8 @@ class MyInterface:
             # Calculate elapsed time
             elapsed_time = time.time() - start_time
 
-            # Check if total runtime exceeded
-            if elapsed_time >= total_runtime:
+            # Check if total runtime exceeded (allow for the last 0.5-second interval)
+            if elapsed_time >= total_runtime + 0.5:
                 self.stop_logging()
                 break
 
@@ -585,13 +585,12 @@ class MyInterface:
                     smoothed_rpm_value = round(self.moving_avg_filter.get_smoothed_value(), 1)
                     smoothed_power_value = round(self.power_conversion(smoothed_rpm_value), 1)
 
-                    # Update time_sec every 0.2 seconds
-                    if time.time() - last_time_sec_update >= 0.5:
-                        time_sec += 0.5
-                        last_time_sec_update = time.time()  # Update the last update time
-
-                        row_data = [time.strftime("%Y-%m-%d %H:%M:%S"), str(round(time_sec,1)), str(pedal_rpm), 
+                    # Record data at exact 0.5-second intervals
+                    if elapsed_time >= next_record_time:
+                        time_sec = round(next_record_time, 1)  # Use the exact interval time
+                        row_data = [time.strftime("%Y-%m-%d %H:%M:%S"), str(time_sec), str(pedal_rpm), 
                                     str(self.power_conversion(str(pedal_rpm))), str(smoothed_rpm_value), str(smoothed_power_value)]
+                        next_record_time += 0.5  # Increment by exactly 0.5 seconds
                         
                     self.update_gauges(str(pedal_rpm))
                     self.update_terminal(f"Rodgue Echo Pedal Rpm: {pedal_rpm} rpm\n")
@@ -613,12 +612,12 @@ class MyInterface:
                 self.stop_logging()
                 break
 
-
-            if time.time() - countdown_time_update >= 1.0:
+            # Update countdown every 0.1 seconds for smoother display
+            if time.time() - countdown_time_update >= 0.1:
                 if initial_runtime == 0:
-                    countdown += 1
+                    countdown = round(elapsed_time)
                 else:
-                    countdown -= 1
+                    countdown = max(0, initial_runtime - round(elapsed_time))
                 self.countdown_label.configure(text=f"Timer\n{countdown}")
                 countdown_time_update = time.time()
 

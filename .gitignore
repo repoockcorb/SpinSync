@@ -1,4 +1,7 @@
-venv/
-build/
-dist/
-SpinSync.spec
+*\venv*
+*\__pycache__*
+*\build*
+*\dist*
+*\SpinSync.spec*
+*\runtime_hook.py*
+*SpinSync.spec*
